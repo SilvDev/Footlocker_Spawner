@@ -1,6 +1,6 @@
 /*
 *	Footlocker Spawner
-*	Copyright (C) 2021 Silvers
+*	Copyright (C) 2022 Silvers
 *
 *	This program is free software: you can redistribute it and/or modify
 *	it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 
 
-#define PLUGIN_VERSION 		"1.17"
+#define PLUGIN_VERSION 		"1.18"
 
 /*======================================================================================
 	Plugin Info:
@@ -31,6 +31,9 @@
 
 ========================================================================================
 	Change Log:
+
+1.18 (11-Dec-2022)
+	- Changes to fix compile warnings on SourceMod 1.11.
 
 1.17 (27-Oct-2021)
 	- Changed the way Firework Crates are spawned to be compatible with "Physics fix" plugin. Thanks to "Marttt" for fixing.
@@ -295,7 +298,7 @@ public void OnMapStart()
 	CreateTimer(0.1, TimerDelayCheck);
 }
 
-public Action TimerDelayCheck(Handle timer)
+Action TimerDelayCheck(Handle timer)
 {
 	SpawnGameMode();
 
@@ -312,6 +315,8 @@ public Action TimerDelayCheck(Handle timer)
 			g_iSpawnSaveMap = StringToInt(sMap[3]);
 		}
 	}
+
+	return Plugin_Continue;
 }
 
 void ResetSaveData()
@@ -337,17 +342,17 @@ public void OnConfigsExecuted()
 	IsAllowed();
 }
 
-public void ConVarChanged_Cvars(Handle convar, const char[] oldValue, const char[] newValue)
+void ConVarChanged_Cvars(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	GetCvars();
 }
 
-public void ConVarChanged_Allow(Handle convar, const char[] oldValue, const char[] newValue)
+void ConVarChanged_Allow(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	IsAllowed();
 }
 
-public void ConVarChanged_Glow(Handle convar, const char[] oldValue, const char[] newValue)
+void ConVarChanged_Glow(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	g_iCvarGlow = g_hCvarGlow.IntValue;
 	g_iCvarGlowCol = GetColor(g_hCvarGlowCol);
@@ -470,7 +475,7 @@ bool IsAllowedGameMode()
 	return true;
 }
 
-public void OnGamemode(const char[] output, int caller, int activator, float delay)
+void OnGamemode(const char[] output, int caller, int activator, float delay)
 {
 	if( strcmp(output, "OnCoop") == 0 )
 		g_iCurrentMode = 1;
@@ -519,7 +524,7 @@ public void OnMapEnd()
 	}
 }
 
-public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
+void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	// Reset on coop/survival
 	if( g_iCurrentMode == 1 || g_iCurrentMode == 2 )
@@ -533,24 +538,26 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 	ResetPlugin();
 }
 
-public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
+void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
 	if( g_iPlayerSpawn == 1 && g_iRoundStart == 0 )
 		CreateTimer(1.0, TimerStart, _, TIMER_FLAG_NO_MAPCHANGE);
 	g_iRoundStart = 1;
 }
 
-public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
+void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
 	if( g_iPlayerSpawn == 0 && g_iRoundStart == 1 )
 		CreateTimer(1.0, TimerStart, _, TIMER_FLAG_NO_MAPCHANGE);
 	g_iPlayerSpawn = 1;
 }
 
-public Action TimerStart(Handle timer)
+Action TimerStart(Handle timer)
 {
 	ResetPlugin();
 	LoadFootlockers();
+
+	return Plugin_Continue;
 }
 
 
@@ -1004,12 +1011,12 @@ void CreateStaticModels(const float vOrigin[3], const float vAngles[3], int inde
 // ====================================================================================================
 //					OPEN LOCKER
 // ====================================================================================================
-public void OnTimeUp(const char[] output, int caller, int activator, float delay)
+void OnTimeUp(const char[] output, int caller, int activator, float delay)
 {
 	OnSpawn(caller, activator, true);
 }
 
-public void OnAnimationBegun(const char[] output, int caller, int activator, float delay)
+void OnAnimationBegun(const char[] output, int caller, int activator, float delay)
 {
 	OnSpawn(caller, activator, false);
 }
@@ -1295,12 +1302,14 @@ void CreateItem(float vPos[3], const float vAng[3], int index, int iType)
 	}
 }
 
-public Action TimerSolidCollision(Handle timer, any entity)
+Action TimerSolidCollision(Handle timer, any entity)
 {
 	if( EntRefToEntIndex(entity) != INVALID_ENT_REFERENCE )
 	{
 		SetEntProp(entity, Prop_Send, "m_CollisionGroup", 0);
 	}
+
+	return Plugin_Continue;
 }
 
 
@@ -1310,7 +1319,7 @@ public Action TimerSolidCollision(Handle timer, any entity)
 // ======================================================================================
 // Client picked up an item. This event fires before the one below.
 int g_iClientPickup[MAXPLAYERS+1];
-public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast)
+void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if( !client || !IsClientInGame(client) ) return;
@@ -1343,7 +1352,7 @@ public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast)
 	}
 }
 
-public void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast)
+void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int target = event.GetInt("targetid");
@@ -1461,7 +1470,7 @@ void VocalizeScene(int client)
 // ====================================================================================================
 //					sm_locker
 // ====================================================================================================
-public Action CmdLockerTemp(int client, int args)
+Action CmdLockerTemp(int client, int args)
 {
 	if( !client )
 	{
@@ -1509,7 +1518,7 @@ public Action CmdLockerTemp(int client, int args)
 // ====================================================================================================
 //					sm_lockersave
 // ====================================================================================================
-public Action CmdLockerSave(int client, int args)
+Action CmdLockerSave(int client, int args)
 {
 	if( !client )
 	{
@@ -1621,7 +1630,7 @@ public Action CmdLockerSave(int client, int args)
 // ====================================================================================================
 //					sm_lockerdel
 // ====================================================================================================
-public Action CmdLockerDelete(int client, int args)
+Action CmdLockerDelete(int client, int args)
 {
 	if( !g_bCvarAllow )
 	{
@@ -1764,7 +1773,7 @@ public Action CmdLockerDelete(int client, int args)
 // ====================================================================================================
 //					sm_lockerwipe
 // ====================================================================================================
-public Action CmdLockerWipe(int client, int args)
+Action CmdLockerWipe(int client, int args)
 {
 	if( !client )
 	{
@@ -1815,7 +1824,7 @@ public Action CmdLockerWipe(int client, int args)
 // ====================================================================================================
 //					sm_lockerclear
 // ====================================================================================================
-public Action CmdLockerClear(int client, int args)
+Action CmdLockerClear(int client, int args)
 {
 	if( !client )
 	{
@@ -1832,7 +1841,7 @@ public Action CmdLockerClear(int client, int args)
 // ====================================================================================================
 //					sm_lockerglow / sm_lockerlist / sm_lockertele
 // ====================================================================================================
-public Action CmdLockerGlow(int client, int args)
+Action CmdLockerGlow(int client, int args)
 {
 	g_bGlow = !g_bGlow;
 	PrintToChat(client, "%sGlow has been turned %s", CHAT_TAG, g_bGlow ? "on" : "off");
@@ -1861,7 +1870,7 @@ void LockerGlow(int glow)
 	}
 }
 
-public Action CmdLockerList(int client, int args)
+Action CmdLockerList(int client, int args)
 {
 	float vPos[3];
 	int count;
@@ -1886,7 +1895,7 @@ public Action CmdLockerList(int client, int args)
 	return Plugin_Handled;
 }
 
-public Action CmdLockerTele(int client, int args)
+Action CmdLockerTele(int client, int args)
 {
 	if( args == 1 )
 	{
@@ -1915,7 +1924,7 @@ public Action CmdLockerTele(int client, int args)
 // ====================================================================================================
 //					MENU ANGLE
 // ====================================================================================================
-public Action CmdLockerAng(int client, int args)
+Action CmdLockerAng(int client, int args)
 {
 	ShowMenuAng(client);
 	return Plugin_Handled;
@@ -1927,7 +1936,7 @@ void ShowMenuAng(int client)
 	g_hMenuAng.Display(client, MENU_TIME_FOREVER);
 }
 
-public int AngMenuHandler(Menu menu, MenuAction action, int client, int index)
+int AngMenuHandler(Menu menu, MenuAction action, int client, int index)
 {
 	if( action == MenuAction_Select )
 	{
@@ -1937,6 +1946,8 @@ public int AngMenuHandler(Menu menu, MenuAction action, int client, int index)
 			SetAngle(client, index);
 		ShowMenuAng(client);
 	}
+
+	return 0;
 }
 
 void SetAngle(int client, int index)
@@ -1982,7 +1993,7 @@ void SetAngle(int client, int index)
 // ====================================================================================================
 //					MENU ORIGIN
 // ====================================================================================================
-public Action CmdLockerPos(int client, int args)
+Action CmdLockerPos(int client, int args)
 {
 	ShowMenuPos(client);
 	return Plugin_Handled;
@@ -1994,7 +2005,7 @@ void ShowMenuPos(int client)
 	g_hMenuPos.Display(client, MENU_TIME_FOREVER);
 }
 
-public int PosMenuHandler(Menu menu, MenuAction action, int client, int index)
+int PosMenuHandler(Menu menu, MenuAction action, int client, int index)
 {
 	if( action == MenuAction_Select )
 	{
@@ -2004,6 +2015,8 @@ public int PosMenuHandler(Menu menu, MenuAction action, int client, int index)
 			SetOrigin(client, index);
 		ShowMenuPos(client);
 	}
+
+	return 0;
 }
 
 void SetOrigin(int client, int index)
@@ -2260,7 +2273,7 @@ bool SetTeleportEndPoint(int client, float vPos[3], float vAng[3])
 	return true;
 }
 
-public bool _TraceFilter(int entity, int contentsMask)
+bool _TraceFilter(int entity, int contentsMask)
 {
 	return entity > MaxClients || !entity;
 }
