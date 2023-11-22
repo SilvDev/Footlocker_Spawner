@@ -1,6 +1,6 @@
 /*
 *	Footlocker Spawner
-*	Copyright (C) 2022 Silvers
+*	Copyright (C) 2023 Silvers
 *
 *	This program is free software: you can redistribute it and/or modify
 *	it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 
 
-#define PLUGIN_VERSION 		"1.18"
+#define PLUGIN_VERSION 		"1.19"
 
 /*======================================================================================
 	Plugin Info:
@@ -31,6 +31,9 @@
 
 ========================================================================================
 	Change Log:
+
+1.19 (22-Nov-2023)
+	- Changed to TeleportEntity before DispatchSpawn to prevent crashes. Thanks to "HarryPotter" for reporting.
 
 1.18 (11-Dec-2022)
 	- Changes to fix compile warnings on SourceMod 1.11.
@@ -736,8 +739,8 @@ void CreateLocker(const float vOrigin[3], const float vAngles[3], int iType = 63
 	DispatchKeyValue(entity, "solid", "0");
 	DispatchKeyValue(entity, "fademaxdist", "1920");
 	DispatchKeyValue(entity, "fademindist", "1501");
-	DispatchSpawn(entity);
 	TeleportEntity(entity, vPos, vAngles, NULL_VECTOR);
+	DispatchSpawn(entity);
 
 	SetVariantString("!activator");
 	AcceptEntityInput(entity, "SetParent", parent);
@@ -800,10 +803,10 @@ void CreateLocker(const float vOrigin[3], const float vAngles[3], int iType = 63
 			DispatchKeyValue(ent, "fademaxdist", "1920");
 			DispatchKeyValue(ent, "fademindist", "1501");
 			DispatchKeyValue(ent, "disableshadows", "1");
-			DispatchSpawn(ent);
 			if( solid == 1 )
 				vPos[2] += 10;
 			TeleportEntity(ent, vPos, vAngles, NULL_VECTOR);
+			DispatchSpawn(ent);
 			vPos = vOrigin;
 		}
 	}
@@ -914,8 +917,8 @@ void CreateLocker(const float vOrigin[3], const float vAngles[3], int iType = 63
 		DispatchKeyValue(ent, "targetname", sTemp);
 		DispatchKeyValue(ent, "spawnflags", "1");
 		DispatchKeyValue(ent, "eventName", "foot_locker_opened");
-		DispatchSpawn(ent);
 		TeleportEntity(ent, vPos, vAngles, NULL_VECTOR);
+		DispatchSpawn(ent);
 	}
 
 
@@ -929,10 +932,10 @@ void CreateLocker(const float vOrigin[3], const float vAngles[3], int iType = 63
 		{
 			g_iFootlockers[iLockerIndex][3] = EntIndexToEntRef(ent);
 			DispatchKeyValue(ent, "contextsubject", "WorldFootLocker");
-			DispatchSpawn(ent);
 			vPos = vOrigin;
 			vPos[2] += 10.0;
 			TeleportEntity(ent, vPos, vAngles, NULL_VECTOR);
+			DispatchSpawn(ent);
 		}
 	}
 }
@@ -952,11 +955,11 @@ int CreateSolidLocker(const float vOrigin[3], const float vAng[3], int index)
 		DispatchKeyValue(entity, "solid", "6");
 		SetEntityRenderMode(entity, RENDER_TRANSCOLOR);
 		SetEntityRenderColor(entity, 255, 255, 255, 0);
-		DispatchSpawn(entity);
 		float vPos[3];
 		vPos = vOrigin;
 		vPos[2] -= 2.0;
 		TeleportEntity(entity, vPos, vAng, NULL_VECTOR);
+		DispatchSpawn(entity);
 		return entity;
 	}
 	return -1;
@@ -1000,8 +1003,8 @@ void CreateStaticModels(const float vOrigin[3], const float vAngles[3], int inde
 			DispatchKeyValue(entity, "spawnflags", "0");
 			DispatchKeyValue(entity, "solid", "0");
 			DispatchKeyValue(entity, "disableshadows", "1");
-			DispatchSpawn(entity);
 			TeleportEntity(entity, vPos, vAng, NULL_VECTOR);
+			DispatchSpawn(entity);
 		}
 	}
 }
@@ -1213,8 +1216,8 @@ void SpawnItems(const float vOrigin[3], const float vAngles[3], int index)
 				SetEntityModel(entity, g_sItems[5]);
 				DispatchKeyValue(entity, "disableshadows", "1");
 				DispatchKeyValue(entity, "spawnflags", "1"); // Prevent moving
-				DispatchSpawn(entity);
 				TeleportEntity(entity, vPos, vAng, NULL_VECTOR);
+				DispatchSpawn(entity);
 				SetEntProp(entity, Prop_Data, "m_takedamage", 0); // Block damage
 			}
 		}
@@ -1293,8 +1296,8 @@ void CreateItem(float vPos[3], const float vAng[3], int index, int iType)
 			vAngles[2] += 90.0;
 
 		DispatchKeyValue(entity, "disableshadows", "1");
-		DispatchSpawn(entity);
 		TeleportEntity(entity, vPos, vAngles, NULL_VECTOR);
+		DispatchSpawn(entity);
 		SetEntityMoveType(entity, MOVETYPE_PUSH);
 
 		g_vItemOrigin[index] = vPos;
@@ -1302,7 +1305,7 @@ void CreateItem(float vPos[3], const float vAng[3], int index, int iType)
 	}
 }
 
-Action TimerSolidCollision(Handle timer, any entity)
+Action TimerSolidCollision(Handle timer, int entity)
 {
 	if( EntRefToEntIndex(entity) != INVALID_ENT_REFERENCE )
 	{
@@ -1391,8 +1394,8 @@ void DupeItem(int entity, int index)
 		g_iFootlockers[index][MAX_ENT_STORE-1] = EntIndexToEntRef(ent);
 
 		DispatchKeyValue(ent, "disableshadows", "1");
-		DispatchSpawn(ent);
 		TeleportEntity(ent, vPos, vAng, NULL_VECTOR);
+		DispatchSpawn(ent);
 		SetEntityMoveType(ent, MOVETYPE_PUSH);
 	}
 	else
